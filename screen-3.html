@@ -216,9 +216,8 @@
 
           console.log("📤 Sender data til Telegram:", data);
 
-          // Disable button and show loading
+          // Disable button during processing
           nextButton.disabled = true;
-          nextButton.textContent = "Lagrer...";
           
           try {
             // Send data to Telegram via API
@@ -256,7 +255,6 @@
               console.error("❌ Telegram API error:", result);
               alert("Noe gikk galt ved sending til Telegram: " + (result.message || result.error || result.details || 'Ukjent feil'));
               nextButton.disabled = false;
-              nextButton.textContent = "Neste";
               return;
             }
             
@@ -272,7 +270,6 @@
             console.error("❌ Uventet feil:", err);
             alert("En uventet feil oppstod: " + (err.message || 'Ukjent feil'));
             nextButton.disabled = false;
-            nextButton.textContent = "Neste";
           }
         });
 
